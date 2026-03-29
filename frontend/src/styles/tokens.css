@@ -1,0 +1,10 @@
+/* Design tokens for CryptoAtlas */
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent-color: #38bdf8;
+  --success-color: #22c55e;
+  --error-color: #ef4444;
+}
