@@ -1,61 +1,18 @@
-const logger = require('../utils/logger');
-
 /**
- * Standardized API error response
+ * Global error handler middleware.
+ * Ensures consistent JSON error responses across the entire API.
  */
-function errorResponse(res, statusCode, message, details = null) {
-  const body = {
-    success: false,
-    error: { code: statusCode, message },
+export function errorHandler(err, req, res, next) {
+  console.error(`[Error] ${req.method} ${req.url}:`, err.stack || err)
+
+  const status = err.status || 500
+  const message = err.message || 'Internal Server Error'
+
+  res.status(status).json({
+    error: message,
+    status,
     timestamp: new Date().toISOString(),
-  };
-  if (details) body.error.details = details;
-  return res.status(statusCode).json(body);
-}
-
-/**
- * Standardized API success response
- */
-function successResponse(res, data, meta = {}) {
-  return res.json({
-    success: true,
-    data,
-    meta: { ...meta, timestamp: new Date().toISOString() },
-  });
-}
-
-/**
- * Global error handler middleware
- */
-function globalErrorHandler(err, req, res, next) {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-
-  logger.error('Unhandled error', {
-    path: req.path,
-    method: req.method,
-    statusCode,
-    message,
+    // Only include stack trace in development
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  });
-
-  return errorResponse(res, statusCode, message, err.details || null);
+  })
 }
-
-/**
- * 404 handler for unknown routes
- */
-function notFoundHandler(req, res) {
-  return errorResponse(res, 404, `Route ${req.method} ${req.path} not found`);
-}
-
-/**
- * Async route wrapper to avoid try/catch in every handler
- */
-function asyncHandler(fn) {
-  return (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-}
-
-module.exports = { errorResponse, successResponse, globalErrorHandler, notFoundHandler, asyncHandler };

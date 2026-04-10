@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { createAlert, deleteAlert } from '@/services/api'
+import { fetchAlerts, createAlert, deleteAlert } from '@/services/api'
 
 const STORAGE_KEY = 'cryptoatlas-alerts'
 
@@ -28,6 +28,20 @@ export const useAlertStore = create((set, get) => ({
   alerts: loadFromStorage(),
   loading: false,
   error: null,
+  initialized: false,
+
+  loadAlerts: async () => {
+    if (get().loading) return
+    set({ loading: true, error: null })
+
+    try {
+      const alerts = await fetchAlerts()
+      saveToStorage(alerts)
+      set({ alerts, loading: false, initialized: true })
+    } catch (err) {
+      set({ error: err.message, loading: false })
+    }
+  },
 
   addAlert: async (alert) => {
     set({ loading: true, error: null })

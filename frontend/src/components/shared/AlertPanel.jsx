@@ -14,7 +14,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { useAlerts } from '@/hooks/useAlerts'
-import { MOCK_COINS } from '@/services/mockData'
+import { useMarketStore } from '@/store/marketStore'
 import clsx from 'clsx'
 
 const ALERT_TYPES = [
@@ -155,6 +155,7 @@ function SuccessToast({ message, onClose }) {
 
 export default function AlertPanel({ preselectedCoin = null }) {
   const { alerts, loading, error, addAlert, removeAlert, clearError } = useAlerts()
+  const coins = useMarketStore((state) => state.coins)
   const [form, setForm] = useState({
     coinId: preselectedCoin?.id || '',
     coinSymbol: preselectedCoin?.symbol || '',
@@ -207,11 +208,6 @@ export default function AlertPanel({ preselectedCoin = null }) {
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-atlas-accent/10 ring-1 ring-atlas-accent/20">
             <Bell className="h-5 w-5 text-atlas-accent" />
-            {alerts.length > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-atlas-accent text-[9px] font-bold text-white">
-                {alerts.length}
-              </span>
-            )}
           </div>
           <div>
             <h3 className="text-sm font-semibold text-atlas-text">Price Alerts</h3>
@@ -274,7 +270,7 @@ export default function AlertPanel({ preselectedCoin = null }) {
             <select
               value={form.coinId}
               onChange={(event) => {
-                const coin = MOCK_COINS.find((item) => item.id === event.target.value)
+                const coin = coins.find((item) => item.id === event.target.value)
                 setForm((current) => ({
                   ...current,
                   coinId: event.target.value,
@@ -290,7 +286,7 @@ export default function AlertPanel({ preselectedCoin = null }) {
               required
             >
               <option value="">Choose a coin...</option>
-              {MOCK_COINS.map((coin) => (
+              {coins.map((coin) => (
                 <option key={coin.id} value={coin.id}>
                   {coin.name} ({coin.symbol})
                 </option>

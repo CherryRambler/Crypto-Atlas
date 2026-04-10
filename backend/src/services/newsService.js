@@ -1,131 +1,104 @@
-const Parser = require('rss-parser');
-const axios = require('axios');
-const { newsCache, getOrSet } = require('../utils/cache');
-const logger = require('../utils/logger');
+import axios from 'axios'
+import Parser from 'rss-parser'
+import { cache } from '../cache/index.js'
+import config from '../config/index.js'
 
-const rssParser = new Parser({
-  timeout: 10000,
-  headers: { 'User-Agent': 'CryptoAtlas/1.0 News Aggregator' },
-  customFields: {
-    item: ['media:thumbnail', 'media:content', 'enclosure'],
-  },
-});
-
-// Diverse mix of crypto news RSS sources
-const NEWS_FEEDS = [
-  {
-    url: 'https://cointelegraph.com/rss',
-    source: 'CoinTelegraph',
-    category: 'general',
-  },
-  {
-    url: 'https://coindesk.com/arc/outboundfeeds/rss/',
-    source: 'CoinDesk',
-    category: 'general',
-  },
-  {
-    url: 'https://cryptopotato.com/feed/',
-    source: 'CryptoPotato',
-    category: 'analysis',
-  },
-  {
-    url: 'https://bitcoinmagazine.com/.rss/full/',
-    source: 'Bitcoin Magazine',
-    category: 'bitcoin',
-  },
-  {
-    url: 'https://decrypt.co/feed',
-    source: 'Decrypt',
-    category: 'general',
-  },
-];
+const parser = new Parser()
 
 /**
- * Normalize a raw RSS item into a clean article shape
+ * Fetches and aggregates crypto news from multiple sources.
+ * Sources: NewsAPI.org, CryptoCompare, and CoinDesk RSS fallback.
+ *
+ * @returns {Promise<Array>}
  */
-function normalizeArticle(item, sourceName, category) {
-  // Extract image from various RSS fields
-  const image =
-    item['media:thumbnail']?.['$']?.url ||
-    item['media:content']?.['$']?.url ||
-    item.enclosure?.url ||
-    null;
+export async function getNews() {
+  const CACHE_KEY = 'news-v4'
 
-  // Clean and truncate summary
-  const rawSummary = item.contentSnippet || item.summary || item.content || '';
-  const summary = rawSummary
-    .replace(/<[^>]+>/g, '')   // strip HTML
-    .replace(/\s+/g, ' ')      // collapse whitespace
-    .trim()
-    .slice(0, 300);
+  const cached = cache.get(CACHE_KEY)
+  if (cached) return cached
 
-  return {
-    id: Buffer.from(item.link || item.guid || item.title || '').toString('base64').slice(0, 16),
-    title: (item.title || 'Untitled').trim(),
-    source: sourceName,
-    category,
-    url: item.link || item.guid || null,
-    summary: summary || null,
-    image,
-    publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-    author: item.creator || item.author || null,
-  };
-}
-
-/**
- * Fetch a single RSS feed with error tolerance
- */
-async function fetchFeed({ url, source, category }) {
   try {
-    const feed = await rssParser.parseURL(url);
-    return (feed.items || []).slice(0, 10).map(item =>
-      normalizeArticle(item, source, category)
-    );
-  } catch (err) {
-    logger.warn(`Failed to fetch feed: ${source}`, { url, error: err.message });
-    return []; // graceful degradation — don't fail whole request
+    const newsSources = []
+
+    // 1. Try NewsAPI.org (Global mainstream finance/tech news)
+    if (config.newsapi.apiKey) {
+      try {
+        const { data: newsApiData } = await axios.get(`${config.newsapi.baseUrl}/everything`, {
+          params: {
+            q: 'cryptocurrency OR bitcoin OR ethereum',
+            language: 'en',
+            sortBy: 'publishedAt',
+            pageSize: 20,
+            apiKey: config.newsapi.apiKey,
+          },
+        })
+        const mapped = newsApiData.articles.map((item, idx) => ({
+          id: `newsapi-${idx}-${item.publishedAt}`,
+          title: item.title,
+          url: item.url,
+          source: item.source.name,
+          publishedAt: item.publishedAt,
+          image: item.urlToImage,
+          body: item.description,
+          tags: ['market', 'global'],
+        }))
+        newsSources.push(...mapped)
+      } catch (err) {
+        console.warn('NewsAPI.org fetch failed:', err.message)
+      }
+    }
+
+    // 2. Try CryptoCompare (Crypto-specific aggregate)
+    if (config.cryptocompare.apiKey) {
+      try {
+        const { data: ccData } = await axios.get(config.cryptocompare.newsUrl, {
+          params: { api_key: config.cryptocompare.apiKey },
+        })
+        const mapped = ccData.Data.map((item) => ({
+          id: `cc-${item.id}`,
+          title: item.title,
+          url: item.url,
+          source: item.source_info.name,
+          publishedAt: new Date(item.published_on * 1000).toISOString(),
+          image: item.imageurl,
+          body: item.body,
+          tags: item.categories.split('|').slice(0, 3),
+        }))
+        newsSources.push(...mapped)
+      } catch (err) {
+        console.warn('CryptoCompare fetch failed:', err.message)
+      }
+    }
+
+    // 3. Fallback to RSS if we have nothing or very little
+    if (newsSources.length < 5) {
+      try {
+        const feed = await parser.parseURL('https://www.coindesk.com/arc/outboundfeed/rss/')
+        const mapped = feed.items.map((item) => ({
+          id: item.guid || item.link,
+          title: item.title,
+          url: item.link,
+          source: 'CoinDesk',
+          publishedAt: item.isoDate,
+          image: item.enclosure?.url || '',
+          body: item.contentSnippet,
+          tags: ['RSS', 'CoinDesk'],
+        }))
+        newsSources.push(...mapped)
+      } catch (err) {
+        console.warn('RSS fallback failed:', err.message)
+      }
+    }
+
+    // Sort by date (newest first)
+    const sortedNews = newsSources.sort((a, b) => 
+      new Date(b.publishedAt) - new Date(a.publishedAt)
+    )
+
+    cache.set(CACHE_KEY, sortedNews, config.cache.news)
+    return sortedNews
+  } catch (error) {
+    console.error('Core news service error:', error)
+    return []
   }
 }
-
-/**
- * GET /api/news
- * Returns aggregated, deduplicated crypto news
- */
-async function getLatestNews({ limit = 30, category = null } = {}) {
-  const cacheKey = `news_${category || 'all'}_${limit}`;
-
-  const { data, fromCache } = await getOrSet(newsCache, cacheKey, async () => {
-    logger.info('Fetching crypto news from RSS feeds');
-
-    // Fetch all feeds in parallel
-    const results = await Promise.all(NEWS_FEEDS.map(fetchFeed));
-
-    // Flatten and deduplicate by title similarity
-    const allArticles = results.flat();
-    const seen = new Set();
-    const unique = allArticles.filter(article => {
-      // Deduplicate by normalized title
-      const key = article.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40);
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-    // Sort by recency
-    unique.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-
-    return unique;
-  });
-
-  logger.debug(fromCache ? 'Served news from cache' : 'Fetched fresh news');
-
-  // Apply filters post-cache
-  let filtered = data;
-  if (category) {
-    filtered = data.filter(a => a.category === category);
-  }
-
-  return filtered.slice(0, limit);
-}
-
-module.exports = { getLatestNews };

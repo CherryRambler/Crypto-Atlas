@@ -7,7 +7,7 @@ import {
   generateChartData,
 } from './mockData'
 
-const USE_MOCK = true
+const USE_MOCK = false
 const MOCK_DELAY = 600
 
 function delay(ms) {
@@ -40,7 +40,26 @@ export async function fetchMarket() {
     return MOCK_COINS
   }
 
-  return apiFetch(ENDPOINTS.market, 'market', CACHE_TTL.market)
+  const data = await apiFetch(ENDPOINTS.market, 'market', CACHE_TTL.market)
+  // Normalize: mapping 'image' from backend to 'logo' for frontend components
+  return data.map((coin) => ({
+    ...coin,
+    logo: coin.image,
+  }))
+}
+
+export async function fetchGlobalStats() {
+  if (USE_MOCK) {
+    await delay(200)
+    const totalMarketCap = MOCK_COINS.reduce((sum, coin) => sum + coin.market_cap, 0)
+    return {
+      total_market_cap: totalMarketCap,
+      market_cap_change_percentage_24h_usd: 1.5,
+      active_cryptocurrencies: 9000,
+    }
+  }
+
+  return apiFetch(`${ENDPOINTS.market}/global`, 'global-stats', CACHE_TTL.market)
 }
 
 export async function fetchCoin(id, timeframe = '24h') {
@@ -60,7 +79,21 @@ export async function fetchCoin(id, timeframe = '24h') {
   }
 
   const cacheKey = `coin-${id}-${timeframe}`
-  return apiFetch(`${ENDPOINTS.coin(id)}?timeframe=${timeframe}`, cacheKey, CACHE_TTL.coin)
+  const coin = await apiFetch(
+    `${ENDPOINTS.coin(id)}?timeframe=${timeframe}`,
+    cacheKey,
+    CACHE_TTL.coin
+  )
+
+  // Normalize: mapping 'image' to 'logo' and 'time' to 'timestamp' in chartData
+  return {
+    ...coin,
+    logo: coin.image,
+    chartData: (coin.chartData || []).map((p) => ({
+      ...p,
+      timestamp: p.time,
+    })),
+  }
 }
 
 export async function fetchInsights(id) {
@@ -70,7 +103,21 @@ export async function fetchInsights(id) {
   }
 
   const cacheKey = `insights-${id}`
-  return apiFetch(ENDPOINTS.insights(id), cacheKey, CACHE_TTL.insights)
+  const data = await apiFetch(ENDPOINTS.insights(id), cacheKey, CACHE_TTL.insights)
+
+  // Normalize backend insights to match AIInsights.jsx expectations
+  // Backend provides { summary, signals, metrics }
+  // Frontend expects { sentiment, movement, trend, risk }
+  return {
+    sentiment: data.summary?.toLowerCase().includes('bullish')
+      ? 'bullish'
+      : data.summary?.toLowerCase().includes('bearish')
+      ? 'bearish'
+      : 'neutral',
+    movement: data.summary,
+    trend: data.signals?.[0]?.detail || 'No clear trend detected.',
+    risk: 'Market volatility remains a primary risk factor for this asset.',
+  }
 }
 
 export async function fetchNews() {
@@ -79,7 +126,15 @@ export async function fetchNews() {
     return MOCK_NEWS
   }
 
-  return apiFetch(ENDPOINTS.news, 'news', CACHE_TTL.news)
+  const data = await apiFetch(ENDPOINTS.news, 'news', CACHE_TTL.news)
+
+  // Normalize: mapping backend properties to frontend NewsCard expectations
+  return data.map((item) => ({
+    ...item,
+    time: item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : 'Just now',
+    summary: item.body || item.title,
+    tag: item.tags?.[0] || 'Market',
+  }))
 }
 
 export async function fetchAlerts() {

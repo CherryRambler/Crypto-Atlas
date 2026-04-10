@@ -5,24 +5,35 @@ import { useMarketStore } from '@/store/marketStore'
 import MarketFilters from '@/components/dashboard/MarketFilters'
 import CoinTable from '@/components/dashboard/CoinTable'
 import NewsCard, { NewsCardSkeletons } from '@/components/shared/NewsCard'
-import { fetchNews } from '@/services/api'
+import { fetchNews, fetchGlobalStats } from '@/services/api'
 
-function MarketStats({ coins }) {
+function MarketStats({ coins, global }) {
   const gainers = coins.filter((coin) => coin.change_24h > 0).length
   const losers = coins.filter((coin) => coin.change_24h < 0).length
-  const totalMarketCap = coins.reduce((sum, coin) => sum + coin.market_cap, 0)
+  const totalMarketCap = global?.total_market_cap || coins.reduce((sum, coin) => sum + coin.market_cap, 0)
+  const mcChange = global?.market_cap_change_percentage_24h_usd
+  const activeCoins = global?.active_cryptocurrencies
 
-  function formatMarketCap(value) {
+  function formatCurrency(value) {
     if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`
     if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
     return `$${value.toFixed(0)}`
   }
 
   return (
-    <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-atlas-sub">
+    <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs text-atlas-sub">
       <span>
-        Total Market Cap:{' '}
-        <strong className="text-atlas-text">{formatMarketCap(totalMarketCap)}</strong>
+        Market Cap:{' '}
+        <strong className="text-atlas-text">{formatCurrency(totalMarketCap)}</strong>
+        {mcChange !== undefined && (
+          <span className={mcChange >= 0 ? 'text-atlas-green' : 'text-atlas-red'}>
+            {' '}({mcChange >= 0 ? '+' : ''}{mcChange.toFixed(2)}%){' '}
+          </span>
+        )}
+      </span>
+      <span>
+        Coins: <strong className="text-atlas-text">{activeCoins || coins.length}</strong>
       </span>
       <span>
         <strong className="text-atlas-green">{gainers} gaining</strong>
@@ -37,6 +48,7 @@ export default function DashboardPage() {
   const { coins, loading, error, filter, sortBy, search, setFilter, setSortBy, setSearch } = useMarket()
   const allCoins = useMarketStore((state) => state.coins)
   const [news, setNews] = useState([])
+  const [global, setGlobal] = useState(null)
   const [newsLoading, setNewsLoading] = useState(true)
 
   useEffect(() => {
@@ -44,6 +56,10 @@ export default function DashboardPage() {
       .then(setNews)
       .catch(() => setNews([]))
       .finally(() => setNewsLoading(false))
+
+    fetchGlobalStats()
+      .then(setGlobal)
+      .catch(() => setGlobal(null))
   }, [])
 
   return (
@@ -55,7 +71,7 @@ export default function DashboardPage() {
         >
           Market Overview
         </h1>
-        {allCoins.length > 0 && <MarketStats coins={allCoins} />}
+        {allCoins.length > 0 && <MarketStats coins={allCoins} global={global} />}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

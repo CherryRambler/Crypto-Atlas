@@ -1,4 +1,4 @@
-# 🌐 CryptoAtlas: Your Real-Time Crypto Intelligence Dashboard
+# 🌐 CryptoAtlas: Real-Time Crypto Intelligence
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -6,17 +6,19 @@
 [![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Express](https://img.shields.io/badge/Express.js-000000?logo=express&logoColor=white)](https://expressjs.com/)
 
-**CryptoAtlas** is a sophisticated, full-stack cryptocurrency monitoring platform that provides real-time market data, trend analysis, and comprehensive insights for both casual investors and seasoned traders.
+**CryptoAtlas** is a professional-grade cryptocurrency monitoring dashboard. Built with a focus on accuracy and speed, it bridges the gap between raw market data and actionable intelligence by combining high-fidelity charts, news aggregation, and automated price alerts.
 
 ---
 
 ## ✨ Features
 
-- **🚀 Real-time Market Pulse:** Live data streams for top cryptocurrencies using the latest market APIs.
-- **📊 Intuitive Visualizations:** Interactive charts and graphs to track price movements and volume trends.
-- **📰 Smart Aggregator:** Curated news and social sentiment to keep you ahead of the curve.
-- **📈 Advanced Analytics:** AI-powered insights and technical indicators for informed decision-making.
-- **🌓 Adaptive Interface:** Stunning dark/light modes designed for maximum clarity and user comfort.
+- **🚀 Hybrid Market Data:** Real-time stats from **CoinMarketCap** paired with high-resolution historical OHLCV data from **Binance**.
+- **📈 Professional Charting:** Interactive price charts with multiple timeframes (24H, 7D, 30D, 90D).
+- **🔔 Synchronized Alerts:** Create and manage price/percentage alerts that are persisted on the backend for reliable monitoring.
+- **🧠 AI-Powered Insights:** Rule-based AI analysis providing momentum indicators, risk assessment, and trend summaries for every asset.
+- **🌍 Global Metrics at a Glance:** Overarching market health tracking including Total Market Cap, 24h Volume, and Bitcoin dominance.
+- **📰 News Aggregator:** Multi-source crypto news feed (NewsAPI, CryptoCompare, RSS) with smart tagging and sentiment context.
+- **💎 Premium UI/UX:** A stunning, responsive interface built with Tailwind CSS, featuring glassmorphism elements and smooth micro-animations.
 
 ---
 
@@ -24,10 +26,10 @@
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Frontend** | React 19, Vite, Tailwind CSS, Lucide Icons |
-| **Backend** | Node.js, Express, Axios, RSS Parser |
-| **Caching** | Node Cache |
-| **Security** | Helmet, Express Rate Limit |
+| **Frontend** | React 19, Vite, Zustand (State), Recharts, Tailwind CSS, Lucide Icons |
+| **Backend** | Node.js, Express, Axios, RSS Parser, Node-Cache |
+| **Data Providers** | CoinMarketCap (Market), Binance (Charts), NewsAPI / CryptoCompare (News) |
+| **Security** | Helmet, Express Rate Limit, CORS configuration |
 
 ---
 
@@ -36,33 +38,33 @@
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18+)
-- npm or yarn
+- [CoinMarketCap API Key](https://pro.coinmarketcap.com/) (Free tier available)
 
 ### Installation
 
 1. **Clone the repository:**
-
    ```bash
-   git clone https://github.com/yourusername/CryptoAtlas.git
+   git clone https://github.com/saxen/CryptoAtlas.git
    cd CryptoAtlas
    ```
 
 2. **Setup Backend:**
-
    ```bash
    cd backend
    npm install
-   cp .env.example .env  # Configure your API keys here
-   npm start
+   cp .env.example .env  # Add your API keys here
+   npm run dev
    ```
 
 3. **Setup Frontend:**
-
    ```bash
    cd ../frontend
    npm install
    npm run dev
    ```
+
+4. **Access the app:**
+   Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
@@ -70,26 +72,17 @@
 
 ```text
 CryptoAtlas/
-├── backend/            # Express.js Server & APIs
-│   ├── src/           # Business Logic
-│   └── tests/         # Quality Assurance
+├── backend/            # Express.js Server
+│   ├── src/           # Controllers, Services, & Routes
+│   ├── cache/         # Memory caching layer
+│   └── .env.example   # Template for environment variables
 ├── frontend/           # React + Vite Application
-│   ├── src/           # Components & State Management
-│   └── public/        # Static Assets
+│   ├── src/styles/    # Design system and tokens
+│   ├── src/store/     # Zustand state management
+│   ├── src/services/  # API integration & normalization
+│   └── src/pages/     # Main dashboard and detail views
 └── README.md           # You are here!
 ```
-
----
-
-## 🤝 Contributing
-
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 

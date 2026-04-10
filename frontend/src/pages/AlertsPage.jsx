@@ -20,8 +20,8 @@ export default function AlertsPage() {
         <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-atlas-accent" />
         <div className="text-xs leading-relaxed text-atlas-sub">
           <strong className="text-atlas-text">How alerts work: </strong>
-          Alerts are stored locally in your browser. In production, you would receive
-          notifications via email or push when your conditions are met.
+          Alerts are synchronized with our backend server. You will receive
+          notifications via the dashboard when your target conditions are met.
         </div>
       </div>
 

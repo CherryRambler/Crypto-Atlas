@@ -5,7 +5,7 @@ import clsx from 'clsx'
 
 const NAV_LINKS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/alerts', label: 'Alerts', icon: Bell, badge: 3 },
+  { to: '/alerts', label: 'Alerts', icon: Bell },
 ]
 
 function NavLink({ link, isActive, onClick }) {

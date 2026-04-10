@@ -15,7 +15,7 @@ import clsx from 'clsx';
 
 const MENU_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, description: 'Market overview' },
-  { to: '/alerts', label: 'Alerts', icon: Bell, description: 'Price notifications', badge: 3 },
+  { to: '/alerts', label: 'Alerts', icon: Bell, description: 'Price notifications' },
   { to: '/portfolio', label: 'Portfolio', icon: Wallet, description: 'Track holdings' },
   { to: '/analytics', label: 'Analytics', icon: PieChart, description: 'Deep insights' },
 ];
