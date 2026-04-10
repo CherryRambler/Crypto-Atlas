@@ -10,6 +10,13 @@
 
 ---
 
+## ⚡ Live Demo
+
+- **Frontend:** [https://crypto-atlas.vercel.app/](https://crypto-atlas.vercel.app/)
+- **Backend API:** [https://crypto-atlas.onrender.com](https://crypto-atlas.onrender.com)
+
+---
+
 ## ✨ Features
 
 - **🚀 Hybrid Market Data:** Real-time stats from **CoinMarketCap** paired with high-resolution historical OHLCV data from **Binance**.
