@@ -41,6 +41,12 @@ app.use('/api/news', newsRoutes)
 app.use('/api/alerts', alertsRoutes)
 
 // ── Health check ───────────────────────────────────────────────────────────
+app.get('/', (_req, res) => res.json({ 
+  message: '🚀 CryptoAtlas API is live!',
+  status: 'ok',
+  endpoints: ['/api/market', '/api/coins', '/api/news', '/api/alerts']
+}))
+
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 
 // ── 404 catch-all ──────────────────────────────────────────────────────────
